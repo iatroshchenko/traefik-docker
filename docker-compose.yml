@@ -1,0 +1,150 @@
+version: '3'
+services:
+  traefik:
+    image: traefik:v2.5
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Порт для веб-интерфейса Traefik
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - mynetwork
+  hw-users-nginx:
+    ports:
+      - "8001:80"
+    build:
+      context: "./hw-users/dev/nginx"
+      dockerfile: nginx-dev.Dockerfile
+    volumes:
+      - "./../hw-users/:/app"
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-users-php-fpm
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.users.stripprefixregex.regex=/users"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolallowheaders=x-requested-with,Content-Type,Authorization"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolalloworiginlist=http://localhost:5173,http://localhost"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.users-cors.headers.addvaryheader=true"
+      - "traefik.http.routers.users.rule=PathPrefix(`/users`)"
+      - "traefik.http.routers.users.middlewares=users@docker,users-cors@docker"
+  hw-users-php-fpm:
+    build:
+      context: "./hw-users/dev/php-fpm"
+      dockerfile: php-fpm.Dockerfile
+    volumes:
+      - "./../hw-users:/app"
+      - './docker/dev/php-fpm/custom.ini:/usr/local/etc/php/php.ini'
+      - './docker/dev/php-fpm/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini'
+      #      - './docker/dev/custom.ini:/usr/local/etc/php/conf.d/xxx-devilbox-default-php.ini'
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-users-pgsql
+  hw-books-nginx:
+    ports:
+      - "8002:80"
+    build:
+      context: "./hw-books/dev/nginx"
+      dockerfile: nginx-dev.Dockerfile
+    volumes:
+      - "./../hw-books/:/app"
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-books-php-fpm
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.books.stripprefixregex.regex=/books"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolallowheaders=x-requested-with,Content-Type,Authorization"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolalloworiginlist=http://localhost:5173,http://localhost"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.books-cors.headers.addvaryheader=true"
+      - "traefik.http.routers.books.rule=PathPrefix(`/books`)"
+      - "traefik.http.routers.books.middlewares=books,books-cors@docker"
+  hw-books-php-fpm:
+    build:
+      context: "./hw-books/dev/php-fpm"
+      dockerfile: php-fpm.Dockerfile
+    volumes:
+      - "./../hw-books/:/app"
+      - './docker/dev/php-fpm/custom.ini:/usr/local/etc/php/php.ini'
+      - './docker/dev/php-fpm/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini'
+      #      - './docker/dev/custom.ini:/usr/local/etc/php/conf.d/xxx-devilbox-default-php.ini'
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-users-pgsql
+#  mysql:
+#    networks:
+#      - mynetwork
+#    image: mysql:8.0
+#    command: mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+#    environment:
+#      MYSQL_ROOT_PASSWORD: upwork
+#      MYSQL_DATABASE: upwork
+#      MYSQL_USER: upwork
+#      MYSQL_PASSWORD: secret
+#      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+#    ports:
+#      - '3306:3306'
+#    volumes:
+#      - './docker/db/data:/var/lib/mysql'
+#      - './docker/db/my.cnf:/etc/mysql/conf.d/my.cnf'
+#      - './docker/db/sql:/docker-entrypoint-initdb.d'
+  hw-users-pgsql:
+    image: 'postgres:13'
+    ports:
+      - '5432:5432'
+    environment:
+      PGPASSWORD: 'secret'
+      POSTGRES_DB: 'hw-users'
+      POSTGRES_USER: 'hw-users'
+      POSTGRES_PASSWORD: 'secret'
+    volumes:
+      - 'hw-users-volume:/var/lib/postgresql/data'
+    networks:
+      - mynetwork
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+  hw-books-pgsql:
+    image: 'postgres:13'
+    ports:
+      - '5433:5432'
+    environment:
+      PGPASSWORD: 'secret'
+      POSTGRES_DB: 'hw-books'
+      POSTGRES_USER: 'hw-books'
+      POSTGRES_PASSWORD: 'secret'
+    volumes:
+      - 'hw-books-volume:/var/lib/postgresql/data'
+    networks:
+      - mynetwork
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+
+networks:
+  mynetwork:
+    driver: bridge
+volumes:
+  hw-users-volume:
+    driver: local
+  hw-books-volume:
+    driver: local
