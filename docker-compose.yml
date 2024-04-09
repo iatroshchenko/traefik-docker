@@ -32,7 +32,7 @@ services:
       - "traefik.http.middlewares.users.stripprefixregex.regex=/users"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolallowheaders=x-requested-with,Content-Type,Authorization"
-      - "traefik.http.middlewares.users-cors.headers.accesscontrolalloworiginlist=http://localhost:5173,http://localhost"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolalloworiginlist=http://localhost:5173,http://localhost,https://f870-176-36-204-178.ngrok-free.app"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolallowcredentials=true"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.users-cors.headers.addvaryheader=true"
@@ -69,7 +69,7 @@ services:
       - "traefik.http.middlewares.books.stripprefixregex.regex=/books"
       - "traefik.http.middlewares.books-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
       - "traefik.http.middlewares.books-cors.headers.accesscontrolallowheaders=x-requested-with,Content-Type,Authorization"
-      - "traefik.http.middlewares.books-cors.headers.accesscontrolalloworiginlist=http://localhost:5173,http://localhost"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolalloworiginlist=http://localhost:5173,http://localhost,https://f870-176-36-204-178.ngrok-free.app"
       - "traefik.http.middlewares.books-cors.headers.accesscontrolallowcredentials=true"
       - "traefik.http.middlewares.books-cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.books-cors.headers.addvaryheader=true"
@@ -88,6 +88,18 @@ services:
       - mynetwork
     depends_on:
       - hw-users-pgsql
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+        - ./mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - mynetwork
 #  mysql:
 #    networks:
 #      - mynetwork
@@ -139,6 +151,36 @@ services:
       test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
       retries: 3
       timeout: 5s
+  hw-books-pgsql-test:
+    image: 'postgres:13'
+    ports:
+      - '5434:5432'
+    environment:
+      PGPASSWORD: 'secret'
+      POSTGRES_DB: 'hw-books_test'
+      POSTGRES_USER: 'hw-books'
+      POSTGRES_PASSWORD: 'secret'
+    volumes:
+      - 'hw-books-test-volume-1:/var/lib/postgresql/data'
+    networks:
+      - mynetwork
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+  db-old:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 'secret'
+      MYSQL_DATABASE: 'old'
+      MYSQL_USER: 'old'
+      MYSQL_PASSWORD: 'secret'
+    ports:
+      - "33306:3306"
+    volumes:
+      - "old-db-volume:/var/lib/mysql"
+      - "./dump-data:/dump-data"
 
 networks:
   mynetwork:
@@ -147,4 +189,8 @@ volumes:
   hw-users-volume:
     driver: local
   hw-books-volume:
+    driver: local
+  hw-books-test-volume-1:
+    driver: local
+  old-db-volume:
     driver: local

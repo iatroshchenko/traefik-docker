@@ -24,6 +24,21 @@ RUN apk update && apk add postgresql-dev \
 RUN apk add --no-cache --update zip unzip libzip-dev
 RUN docker-php-ext-configure zip && docker-php-ext-install zip
 
+# Install mongodb
+RUN apk add --no-cache \
+        autoconf \
+        g++ \
+        make \
+        openssl-dev \
+        && pecl install mongodb \
+        && docker-php-ext-enable mongodb
+
+RUN apk del \
+        autoconf \
+        g++ \
+        make \
+        && rm -rf /tmp/*
+
 # install xdebug
 RUN apk add --no-cache $PHPIZE_DEPS \
     && apk add linux-headers \
