@@ -23,7 +23,7 @@ services:
       - "traefik.http.services.acme_challenge.loadbalancer.server.port=80"
       - "traefik.http.services.acme_challenge.loadbalancer.passhostheader=true"
       - "traefik.http.middlewares.acme_challenge_file.replacepathregex.regex=^/.well-known/acme-challenge/(.*)"
-      - "traefik.http.middlewares.acme_challenge_file.replacepathregex.replacement=/acme-challenge-files/$1"
+      - "traefik.http.middlewares.acme_challenge_file.replacepathregex.replacement=/acme-challenge-files/${1}"
       - "traefik.http.routers.acme_challenge.middlewares=acme_challenge_file"
   hw-users-nginx:
     ports:
