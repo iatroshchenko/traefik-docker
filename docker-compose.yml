@@ -32,7 +32,7 @@ services:
       - "traefik.http.middlewares.users.stripprefixregex.regex=/users"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolallowheaders=x-requested-with,Content-Type,Authorization"
-      - "traefik.http.middlewares.books-cors.headers.accesscontrolalloworiginlist=http://ct.hellnet.de:5173,,http://localhost:5173,http://138.68.76.153:5173,http://localhost"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolalloworiginlist=http://ct.hellnet.de:5173,,http://localhost:5173,http://138.68.76.153:5173,http://localhost"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolallowcredentials=true"
       - "traefik.http.middlewares.users-cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.users-cors.headers.addvaryheader=true"
