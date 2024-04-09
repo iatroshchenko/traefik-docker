@@ -7,13 +7,24 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
     ports:
       - "80:80"
-      - "8080:8080"  # Порт для веб-интерфейса Traefik
+      - "443:443"
+      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/root/acme-challenge-files:/acme-challenge-files"
     networks:
       - mynetwork
+    labels:
+      - "traefik.http.routers.acme_challenge.rule=Host(`ct.hellnet.de`) && Path(`/`) && PathPrefix(`/.well-known/acme-challenge/`)"
+      - "traefik.http.routers.acme_challenge.service=acme_challenge"
+      - "traefik.http.services.acme_challenge.loadbalancer.server.port=80"
+      - "traefik.http.services.acme_challenge.loadbalancer.passhostheader=true"
+      - "traefik.http.middlewares.acme_challenge_file.replacepathregex.regex=^/.well-known/acme-challenge/(.*)"
+      - "traefik.http.middlewares.acme_challenge_file.replacepathregex.replacement=/acme-challenge-files/$1"
+      - "traefik.http.routers.acme_challenge.middlewares=acme_challenge_file"
   hw-users-nginx:
     ports:
       - "8001:80"
