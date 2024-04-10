@@ -15,6 +15,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./traefik.yaml:/etc/traefik/traefik.yaml"
+      - "./traefik_dynamic.yaml:/etc/traefik/traefik_dynamic.yaml"
       - "./certs/:/certs/"
     networks:
       - mynetwork
