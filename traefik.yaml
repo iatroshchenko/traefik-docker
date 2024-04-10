@@ -1,4 +1,17 @@
+api:
+  insecure: true
+
 providers:
-  file:
-    filename: /etc/traefik/traefik_dynamic.yaml
-    watch: true
+  docker:
+    exposedByDefault: false
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+tls:
+  certificates:
+    - certFile: /certs/fullchain.pem
+      keyFile: /certs/privkey.pem
