@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: books-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: books-nginx
+  template:
+    metadata:
+      labels:
+        app: books-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: ct.hellnet.de/books-nginx:1.0
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: books-nginx
+spec:
+  selector:
+    app: books-nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

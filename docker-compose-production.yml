@@ -1,0 +1,127 @@
+version: '3'
+services:
+  traefik:
+    image: traefik:v2.5
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Порт для веб-интерфейса Traefik
+    networks:
+      - mynetwork
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+  hw-users-nginx:
+    ports:
+      - "8001:80"
+    image: ct.hellnet.de/users-nginx:1.0
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-users
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.users.stripprefixregex.regex=/users"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolallowheaders=x-requested-with,Content-Type,Authorization"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolalloworiginlist=http://ct.hellnet.de:5173,,http://localhost:5173,http://138.68.76.153:5173,http://localhost"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.users-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.users-cors.headers.addvaryheader=true"
+      - "traefik.http.routers.users.rule=PathPrefix(`/users`)"
+      - "traefik.http.routers.users.middlewares=users@docker,users-cors@docker"
+  hw-users:
+    image: ct.hellnet.de/users-php:1.0
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-users-pgsql
+  hw-books-nginx:
+    image: ct.hellnet.de/books-nginx:1.0
+    ports:
+      - "8002:80"
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-books
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.books.stripprefixregex.regex=/books"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolallowheaders=x-requested-with,Content-Type,Authorization"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolalloworiginlist=http://ct.hellnet.de:5173,,http://localhost:5173,http://138.68.76.153:5173,http://localhost"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.books-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.books-cors.headers.addvaryheader=true"
+      - "traefik.http.routers.books.rule=PathPrefix(`/books`)"
+      - "traefik.http.routers.books.middlewares=books,books-cors@docker"
+  hw-books:
+    image: ct.hellnet.de/books-php:1.0
+    networks:
+      - mynetwork
+    depends_on:
+      - hw-users-pgsql
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    networks:
+      - mynetwork
+  hw-users-pgsql:
+    image: 'postgres:13'
+    ports:
+      - '5432:5432'
+    environment:
+      PGPASSWORD: 'secret'
+      POSTGRES_DB: 'hw-users'
+      POSTGRES_USER: 'hw-users'
+      POSTGRES_PASSWORD: 'secret'
+    networks:
+      - mynetwork
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+  hw-books-pgsql:
+    image: 'postgres:13'
+    ports:
+      - '5433:5432'
+    environment:
+      PGPASSWORD: 'secret'
+      POSTGRES_DB: 'hw-books'
+      POSTGRES_USER: 'hw-books'
+      POSTGRES_PASSWORD: 'secret'
+    networks:
+      - mynetwork
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+  hw-books-pgsql-test:
+    image: 'postgres:13'
+    ports:
+      - '5434:5432'
+    environment:
+      PGPASSWORD: 'secret'
+      POSTGRES_DB: 'hw-books_test'
+      POSTGRES_USER: 'hw-books'
+      POSTGRES_PASSWORD: 'secret'
+    networks:
+      - mynetwork
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+
+networks:
+  mynetwork:
+    driver: bridge
