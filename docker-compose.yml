@@ -14,17 +14,21 @@ services:
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/root/acme-challenge-files:/acme-challenge-files"
     networks:
       - mynetwork
+  hw-acme-nginx:
+    ports:
+      - "8003:80"
+    image: "nginx:alpine"
+    networks:
+      - mynetwork
+    depends_on:
+      - traefik
     labels:
-      - "traefik.http.routers.acme_challenge.rule=PathPrefix(`/.well-known/acme-challenge/UaXZbwdEmjYKCLOmNqCJ22RliVzcleYiIcTqws-kCmQ`)"
-      - "traefik.http.routers.acme_challenge.service=acme_challenge"
-      - "traefik.http.services.acme_challenge.loadbalancer.server.port=80"
-      - "traefik.http.services.acme_challenge.loadbalancer.passhostheader=true"
-      - "traefik.http.middlewares.acme_challenge_file.file.directory=/acme-challenge-files"
-      - "traefik.http.middlewares.acme_challenge_file.file.filename=UaXZbwdEmjYKCLOmNqCJ22RliVzcleYiIcTqws-kCmQ"
-      - "traefik.http.routers.acme_challenge.middlewares=acme_challenge_file"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.acme.stripprefixregex.regex=/.well-known/acme-challenge"
+      - "traefik.http.routers.acme.rule=PathPrefix(`/.well-known/acme-challenge`)"
+      - "traefik.http.routers.acme.middlewares=acme"
   hw-users-nginx:
     ports:
       - "8001:80"
