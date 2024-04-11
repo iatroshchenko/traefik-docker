@@ -1,30 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: books
+  name: hw-books
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: books
+      app: hw-books
   template:
     metadata:
       labels:
-        app: books
+        app: hw-books
     spec:
       containers:
       - name: php-fpm
         image: ct.hellnet.de/books-php:1.0
+        imagePullPolicy: Always
         ports:
         - containerPort: 9000
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: books
+  name: hw-books
 spec:
   selector:
-    app: books
+    app: hw-books
   ports:
     - protocol: TCP
       port: 9000

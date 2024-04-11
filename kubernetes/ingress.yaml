@@ -1,23 +1,26 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: my-ingress
+  name: foo
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: default-strip-prefixes@kubernetescrd
+
 spec:
   rules:
-    - host: vgolosinu.xyz
-      http:
+    - http:
         paths:
           - path: /users
             pathType: Prefix
             backend:
               service:
-                name: hw-users-nginx
+                name: users-nginx
                 port:
                   number: 80
           - path: /books
             pathType: Prefix
             backend:
               service:
-                name: hw-books-nginx
+                name: books-nginx
                 port:
                   number: 80

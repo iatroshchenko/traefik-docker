@@ -1,0 +1,11 @@
+# Strip prefix /foobar and /fiibar
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-prefixes
+  namespace: default
+spec:
+  stripPrefix:
+    prefixes:
+      - /users
+      - /books
